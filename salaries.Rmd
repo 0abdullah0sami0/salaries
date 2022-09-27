@@ -1,0 +1,21 @@
+---
+
+title: "ds salaries"
+subtitle: "Project report"
+author: "abdullah sami"
+output:
+html_document:
+theme: flatly
+toc: yes
+toc_float: yes
+highlight: zenburn
+df_print: paged
+word_document:
+toc: yes
+pdf_document:
+toc: yes
+date: "\`r Sys.Date()\`"
+
+---
+
+
