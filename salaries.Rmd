@@ -276,3 +276,27 @@ ds_salaries %>%
   geom_text(aes(label = paste("count: ",count))) 
 
 ```
+
+
+```{r}
+
+ds_salaries %>%
+    mutate(remote_ratio = as.factor(remote_ratio)) %>%
+    ggplot( aes(x=remote_ratio, y=salaryKUSD, fill=remote_ratio)) +
+    geom_boxplot() +
+    #scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    #theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)) +
+    ggtitle("Salary by remote ratio") +
+    xlab("remote ratio") 
+
+
+```
+
+```{r}
+summary(ds_salaries$salary_in_usd)
+```
+
