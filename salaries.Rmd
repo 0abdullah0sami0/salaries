@@ -19,3 +19,260 @@ date: "\`r Sys.Date()\`"
 ---
 
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+
+```{r}
+# libraries
+library(tidyverse)
+library(knitr)
+library(ggExtra)
+```
+
+
+```{r}
+
+# استدعاء البيانات من csv
+ds_salaries <- read.csv("ds_salaries.csv")
+
+# مشاهدة الجدول اسفل الشنك
+ds_salaries
+
+# مشاهدة الجدول في صفحة مستقلة
+View(ds_salaries)
+
+# ملخص البيانات
+summary(ds_salaries)
+
+# معرفة نوع البيانات وبنيتها
+str(ds_salaries)
+
+# نوع عامود واحد فقط variable
+class(ds_salaries$job_title)
+
+
+```
+
+
+
+```{r}
+# وضعنا االبيانات في متغير واخترنا اعمدة معينة
+salaies <- ds_salaries %>%
+  select(X,work_year,salary,salary_in_usd,remote_ratio)
+
+```
+
+
+```{r}
+
+summary(salaies)
+```
+
+
+
+```{r fig.width= 5}
+
+# تم استدعاء البيانات
+ds_salaries %>%
+# عملنا فلتر يختار صفوف معينة
+  filter(work_year %in% c(2020, 2021)) %>%
+# فلتر يختار صفوف معينة من عامود آخر
+  filter(employment_type %in% c("FL","FT")) %>%
+# تقسيم البيانات إلى مجموعات بناء على عامود
+  group_by(job_title) %>%
+# ملخص البيانات
+  summarise(meansalary = mean(salary_in_usd)) %>%
+# أنشأنا رسم بياني
+# reorder لترتيب الأعمدة 
+  ggplot(aes(x = reorder(job_title, -meansalary), y = meansalary / 10000)) +
+# اللون الداخلي للبيانات
+  geom_col(fill = "red") +
+# العناوين
+  xlab("job title") +
+  ylab("mean salary(in 10K)") +
+  ggtitle("mean salary by job title") +
+# شكل الرسم البياني
+  theme_light() +
+# لتغيير اتجاه النصوص X
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1 )) +
+# لقلب الأعمدة كاملة
+  coord_flip()
+  
+
+```
+
+
+
+
+```{r}
+ds_salaries %>%
+  filter(experience_level == "MI") %>%
+  filter(remote_ratio == 100) %>%
+  group_by(company_location) %>%
+  # n() حساب عدد الصفوف في كل مجموعة
+  summarise(rows = n()) %>%
+  ggplot(aes(x = rows, y = reorder(company_location, -rows))) +
+  geom_col(fill = "blue", width = 0.9 ) +
+  theme_bw() +
+# حذف الشبكة خلف البلوت
+  removeGrid() +
+# لإضافة القيم داخل البلوت
+  geom_text(aes(label = rows),hjust = -0.1) +
+# العناوين
+  labs(title = "Number of employees with experience level MI & remote ratio 100% \nin each company location", subtitle = "bar plot", caption = "Source: Kaggle") +
+  xlab("Count") +
+  ylab("company location") 
+  
+```
+
+
+```{r}
+# معرفة البكج الموجودة في الآر
+installed.packages()
+
+```
+
+
+```{r fig.height = 5}
+ds_salaries %>%
+  filter(remote_ratio == 100) %>%
+
+  ggplot(aes(x = company_location)) +
+# position لتقسيم الأعمدة حسب تصنيف معين
+  geom_bar(aes(fill = experience_level ), width = 0.9, position = "dodge") +
+  theme_bw() +
+  removeGrid() +
+  # geom_text(aes(label = rows),hjust = -0.1) +
+  labs(title = "Number of employees with  remote ratio 100% \nin each company location", subtitle = "bar plot", caption = "Source: Kaggle") +
+  ylab("Count") +
+  xlab("company location") +
+# لنقل legend اسفل الصفحة
+  theme(legend.position = "bottom") +
+# facet_wrap لتقسيم البلوت حسب القيم أو التصنيفات
+# scales ذكر القيم المستخدمة فقط في كل تصنيف
+  facet_wrap(~experience_level,scales = "free") +
+# لإظهار الأرقام
+  stat_count(geom = "text",
+             aes(y =..count.., label = ..count..),vjust = -0.5) 
+```
+
+
+```{r}
+# إضافة عامود جديد
+ds_salaries$salaryKUSD <- ds_salaries$salary_in_usd/1000
+
+ds_salaries %>%
+  filter(job_title == "Data Scientist") %>%
+  group_by(work_year) %>%
+  summarise(meanSalary = mean(salaryKUSD)) %>%
+# لإضافة عامود جديد أو تغيير قيم عامود
+# paste0 إضافة قيم إلى قيم
+  mutate(work_year = as.Date(paste0(work_year,"-01-01"), format = "%Y-%m-%d")) %>%
+
+  ggplot( aes(x= work_year, y= meanSalary)) +
+# لرسم خط
+    geom_line(linetype = "dashed") +
+# لرسم النقط
+    geom_point() +
+# لتقسم البيانات حسب السنة 
+  scale_x_date(date_breaks = "1 year",
+# لمشاهدة السنة فقط
+             date_labels = "%Y") +
+  labs(title = "mean Salary by year for data Scientist", subtitle = "line chart", caption = "Source: Kaggle") +
+  ylab("mean Salary in (KUSD)") +
+  xlab("Work Year") +
+# round حتى نختار عدد الأقام بعد الفاصلة
+  geom_text(aes(label = round(meanSalary,4)),vjust = -0.3) +
+  theme_light()
+
+```
+
+
+
+```{r fig.width= 10}
+
+ds_salaries$salaryKUSD <- ds_salaries$salary_in_usd/1000
+ds_salaries %>%
+  group_by(work_year,job_title) %>%
+  summarise(meanSalary = mean(salaryKUSD)) %>%
+  mutate(work_year = as.Date(paste0(work_year,"-01-01"), format = "%Y-%m-%d"),
+# cat  تم اضافة عامود جديد باسم 
+         cat = ifelse(grepl("Machine Learning",job_title),"Machine Learning",
+               ifelse(grepl("Data Scien",job_title),"Data Science",
+               ifelse(grepl("Data Analy",job_title),"Data Analytics","Other")))) %>%
+
+  ggplot( aes(x= work_year, y= meanSalary,color = job_title)) +
+  
+  geom_line(linetype = "dashed") +
+# لرسم النقط
+    geom_point() +
+# لتقسم البيانات حسب السنة 
+  scale_x_date(date_breaks = "1 year",
+# لمشاهدة السنة فقط
+             date_labels = "%Y") +
+  labs(title = "mean Salary by year for data Scientist", subtitle = "line chart", caption = "Source: Kaggle") +
+  ylab("mean Salary in (KUSD)") +
+  xlab("Work Year") +
+# round حتى نختار عدد الأقام بعد الفاصلة
+  geom_text(aes(label = round(meanSalary,4)),vjust = -0.3) +
+   theme_light() +
+   theme(legend.position = "bottom") +
+  facet_wrap(~cat)
+ 
+```
+
+
+```{r}
+
+devtools::check(run_dont_test = TRUE)
+
+```
+
+
+
+
+```{r, fig.width=10}
+# متوسط الأجور بالنسبة لموقع عمل الشخص employee_residence في سنة 2022
+
+ds_salaries %>%
+  filter(work_year == 2022) %>%
+  group_by(employee_residence) %>%
+  summarise(aaa = n(),meanslary = mean(salary_in_usd)) %>%
+
+  ggplot(aes(x = employee_residence , y = meanslary)) +
+  geom_col(col= "red",fill="red") +
+  labs(title = "mean salary by employee residence in 2022", subtitle = "mean salary",caption = "source: kaggle") +
+  xlab("employee residence") +
+  ylab("mean salary") +
+  geom_text(aes(label = round(meanslary,2)), vjust = -0,hjust = -0.1) +
+  removeGrid() +
+  coord_flip()
+  
+
+```
+
+
+
+
+
+```{r}
+# ما هو متوسط الأجور بالنسبة لكل remote_ratio بناء على وظيفة معينة
+
+ds_salaries %>% 
+  group_by(remote_ratio) %>%
+  filter(job_title == "Data Scientist") %>%
+  summarise(count = n(), meansalary = mean(salaryKUSD)) %>%
+  
+  ggplot(aes(y = meansalary,x = remote_ratio)) +
+  geom_segment(aes(yend = 0, xend = remote_ratio)) +
+  geom_point(size = 4 , color = "orange") +
+  theme_bw() +
+  ylab("meansalary (KUSD)")+
+  xlab("remote ratio") +
+  geom_text(aes(label = paste("count: ",count))) 
+
+```
